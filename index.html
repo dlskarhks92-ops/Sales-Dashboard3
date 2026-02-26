@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영업 CRM 대시보드 | UB케어</title>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1f2d45;
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --gold: #f59e0b;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── 공통 ── */
+  .screen { display:none; animation: fadeIn 0.35s ease; }
+  .screen.active { display:block; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  /* ── 헤더 ── */
+  header {
+    position: sticky; top:0; z-index:100;
+    background: rgba(10,14,26,0.92);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo { font-size: 17px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo span { color: var(--accent); }
+  .breadcrumb { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text3); }
+  .breadcrumb .crumb { cursor:pointer; transition:color .2s; }
+  .breadcrumb .crumb:hover { color:var(--text); }
+  .breadcrumb .crumb.active { color:var(--text); font-weight:600; }
+  .breadcrumb .sep { color:var(--border); }
+  .header-right { display:flex; align-items:center; gap:16px; }
+  .role-badge {
+    font-size:11px; font-weight:700; padding:4px 10px;
+    border-radius:20px; letter-spacing:.5px;
+    background: rgba(59,130,246,0.15); color: var(--accent);
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+  .date-badge { font-size:12px; color:var(--text3); }
+
+  /* ── 메인 ── */
+  .main { max-width: 1400px; margin:0 auto; padding: 32px; }
+
+  /* ── DEPTH 1: 대시보드 ── */
+  .page-title { font-size:24px; font-weight:800; letter-spacing:-0.5px; margin-bottom:4px; }
+  .page-sub { font-size:13px; color:var(--text3); margin-bottom:32px; }
+
+  /* 내 대리점 vs Best 비교 섹션 */
+  .compare-section {
+    background: linear-gradient(135deg, #0f1c3a 0%, #0a1628 100%);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .compare-section::before {
+    content:'';
+    position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .compare-title { font-size:13px; font-weight:700; color:var(--accent2); letter-spacing:1px; text-transform:uppercase; margin-bottom:20px; }
+  .compare-grid { display:grid; grid-template-columns:1fr 40px 1fr; gap:0; align-items:start; }
+  .compare-side { }
+  .compare-label { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:16px; }
+  .compare-label.mine { color:var(--accent); }
+  .compare-label.best { color:var(--gold); }
+  .compare-divider { display:flex; align-items:center; justify-content:center; padding-top:30px; color:var(--text3); font-size:11px; font-weight:700; }
+
+  .kpi-compare-list { display:flex; flex-direction:column; gap:10px; }
+  .kpi-compare-item {
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:10px;
+    padding:12px 16px;
+  }
+  .kpi-compare-item.highlight-mine { border-color:rgba(59,130,246,0.4); }
+  .kpi-compare-item.highlight-best { border-color:rgba(245,158,11,0.4); }
+  .kci-name { font-size:12px; color:var(--text2); }
+  .kci-value { font-size:20px; font-weight:800; letter-spacing:-0.5px; }
+  .kci-value.good { color: var(--success); }
+  .kci-value.warn { color: var(--warning); }
+  .kci-value.bad { color: var(--danger); }
+  .kci-sub { font-size:11px; color:var(--text3); margin-top:2px; }
+
+  /* 액션 가이드 */
+  .action-guide {
+    margin-top:20px;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-radius:10px;
+    padding:16px 20px;
+  }
+  .action-guide.green {
+    background: rgba(16,185,129,0.08);
+    border-color: rgba(16,185,129,0.25);
+  }
+  .action-guide-title { font-size:11px; font-weight:700; letter-spacing:1px; color:var(--danger); margin-bottom:8px; }
+  .action-guide.green .action-guide-title { color:var(--success); }
+  .action-items { display:flex; flex-direction:column; gap:6px; }
+  .action-item { font-size:13px; color:var(--text); display:flex; align-items:flex-start; gap:8px; }
+  .action-item::before { content:'→'; color:var(--danger); flex-shrink:0; }
+  .action-guide.green .action-item::before { color:var(--success); }
+
+  /* 전체 핵심 KPI 카드 */
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:14px;
+    padding:20px 22px;
+    position:relative;
+    overflow:hidden;
+    transition: transform .2s, border-color .2s;
+    cursor:default;
+  }
+  .kpi-card:hover { transform:translateY(-2px); border-color:rgba(59,130,246,0.4); }
+  .kpi-card-icon { font-size:22px; margin-bottom:12px; }
+  .kpi-card-label { font-size:11px; font-weight:700; letter-spacing:1px; color:var(--text3); text-transform:uppercase; margin-bottom:8px; }
+  .kpi-card-value { font-size:34px; font-weight:900; letter-spacing:-1px; line-height:1; }
+  .kpi-card-value.blue { color:var(--accent); }
+  .kpi-card-value.cyan { color:var(--accent2); }
+  .kpi-card-value.green { color:var(--success); }
+  .kpi-card-value.gold { color:var(--gold); }
+  .kpi-card-sub { font-size:12px; color:var(--text3); margin-top:8px; }
+  .kpi-card-bar { height:3px; background:var(--border); border-radius:2px; margin-top:14px; overflow:hidden; }
+  .kpi-card-bar-fill { height:100%; border-radius:2px; transition:width 1s ease; }
+
+  /* 전국 대리점 테이블 */
+  .section-title { font-size:16px; font-weight:800; margin-bottom:4px; }
+  .section-sub { font-size:12px; color:var(--text3); margin-bottom:20px; }
+  .dealer-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:14px;
+    overflow:hidden;
+    margin-bottom:28px;
+  }
+  .dealer-table { width:100%; border-collapse:collapse; }
+  .dealer-table thead tr {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .dealer-table th {
+    padding:12px 16px;
+    text-align:left;
+    font-size:11px; font-weight:700; letter-spacing:1px;
+    color:var(--text3); text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .dealer-table th.right { text-align:right; }
+  .dealer-table tbody tr {
+    border-bottom: 1px solid rgba(31,45,69,0.5);
+    transition: background .15s;
+    cursor:pointer;
+  }
+  .dealer-table tbody tr:last-child { border-bottom:none; }
+  .dealer-table tbody tr:hover { background: var(--surface2); }
+  .dealer-table td { padding:14px 16px; font-size:13px; vertical-align:middle; }
+  .dealer-table td.right { text-align:right; }
+  .rank-badge {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:6px;
+    font-size:12px; font-weight:800;
+  }
+  .rank-1 { background:rgba(245,158,11,0.2); color:var(--gold); }
+  .rank-2 { background:rgba(148,163,184,0.15); color:#94a3b8; }
+  .rank-3 { background:rgba(180,120,60,0.15); color:#cd7f32; }
+  .rank-n { background:rgba(31,45,69,0.8); color:var(--text3); }
+  .my-row { background: rgba(59,130,246,0.05) !important; }
+  .my-tag {
+    display:inline-block;
+    font-size:10px; font-weight:700;
+    padding:2px 6px; border-radius:4px;
+    background:rgba(59,130,246,0.2); color:var(--accent);
+    margin-left:6px;
+  }
+  .score-bar-wrap { display:flex; align-items:center; gap:8px; }
+  .score-bar { flex:1; height:6px; background:var(--border); border-radius:3px; overflow:hidden; max-width:80px; }
+  .score-bar-fill { height:100%; border-radius:3px; }
+  .pill {
+    display:inline-block; padding:3px 8px; border-radius:20px;
+    font-size:11px; font-weight:700;
+  }
+  .pill-green { background:rgba(16,185,129,0.15); color:var(--success); }
+  .pill-yellow { background:rgba(245,158,11,0.15); color:var(--warning); }
+  .pill-red { background:rgba(239,68,68,0.15); color:var(--danger); }
+  .clickable-num {
+    font-weight:700; color:var(--accent);
+    cursor:pointer; text-decoration:underline;
+    text-decoration-color:rgba(59,130,246,0.3);
+    text-underline-offset:3px;
+    transition:color .2s;
+  }
+  .clickable-num:hover { color:var(--accent2); }
+
+  /* ── DEPTH 2: 고객 리스트 ── */
+  .back-btn {
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:600; color:var(--text3);
+    cursor:pointer; margin-bottom:24px;
+    transition:color .2s;
+    background:none; border:none;
+  }
+  .back-btn:hover { color:var(--text); }
+  .dealer-info-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:12px;
+    padding:20px 24px;
+    margin-bottom:24px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .dib-left { }
+  .dib-name { font-size:20px; font-weight:800; margin-bottom:4px; }
+  .dib-meta { font-size:12px; color:var(--text3); }
+  .dib-kpis { display:flex; gap:32px; }
+  .dib-kpi { text-align:center; }
+  .dib-kpi-v { font-size:22px; font-weight:800; }
+  .dib-kpi-l { font-size:11px; color:var(--text3); margin-top:2px; }
+
+  .filter-bar {
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:20px; flex-wrap:wrap;
+  }
+  .filter-btn {
+    padding:6px 14px; border-radius:20px;
+    font-size:12px; font-weight:600;
+    border: 1px solid var(--border);
+    background:var(--surface); color:var(--text2);
+    cursor:pointer; transition: all .2s;
+  }
+  .filter-btn:hover, .filter-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  .customer-table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius:14px;
+    overflow:hidden;
+  }
+  .customer-table { width:100%; border-collapse:collapse; }
+  .customer-table thead tr {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .customer-table th {
+    padding:12px 16px; text-align:left;
+    font-size:11px; font-weight:700; letter-spacing:1px;
+    color:var(--text3); text-transform:uppercase; white-space:nowrap;
+  }
+  .customer-table tbody tr {
+    border-bottom: 1px solid rgba(31,45,69,0.5);
+    cursor:pointer; transition:background .15s;
+  }
+  .customer-table tbody tr:last-child { border-bottom:none; }
+  .customer-table tbody tr:hover { background:var(--surface2); }
+  .customer-table td { padding:14px 16px; font-size:13px; vertical-align:middle; }
+  .stage-badge {
+    display:inline-block; padding:3px 10px; border-radius:20px;
+    font-size:11px; font-weight:700;
+  }
+  .stage-1 { background:rgba(59,130,246,0.15); color:var(--accent); }
+  .stage-2 { background:rgba(6,182,212,0.15); color:var(--accent2); }
+  .stage-3 { background:rgba(245,158,11,0.15); color:var(--warning); }
+  .stage-4 { background:rgba(16,185,129,0.15); color:var(--success); }
+  .stage-5 { background:rgba(239,68,68,0.15); color:var(--danger); }
+  .contact-speed {
+    display:flex; align-items:center; gap:6px; font-size:12px;
+  }
+  .speed-dot { width:8px; height:8px; border-radius:50%; }
+
+  /* ── DEPTH 3: 고객 상세 ── */
+  .customer-detail-grid { display:grid; grid-template-columns:340px 1fr; gap:24px; }
+  .customer-info-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:24px;
+    height:fit-content;
+    position:sticky; top:80px;
+  }
+  .cust-avatar {
+    width:56px; height:56px; border-radius:14px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-size:22px; font-weight:800; margin-bottom:16px;
+  }
+  .cust-name { font-size:20px; font-weight:800; margin-bottom:4px; }
+  .cust-hospital { font-size:13px; color:var(--text2); margin-bottom:16px; }
+  .info-divider { height:1px; background:var(--border); margin:16px 0; }
+  .info-row { display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px; }
+  .info-label { color:var(--text3); }
+  .info-value { font-weight:600; }
+  .kpi-mini-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+  .kpi-mini {
+    background:var(--surface2); border-radius:10px; padding:12px;
+    text-align:center;
+  }
+  .kpi-mini-v { font-size:18px; font-weight:800; }
+  .kpi-mini-l { font-size:10px; color:var(--text3); margin-top:3px; }
+
+  /* 타임라인 */
+  .timeline-card {
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:24px;
+  }
+  .timeline-title { font-size:16px; font-weight:800; margin-bottom:20px; }
+  .timeline { position:relative; padding-left:24px; }
+  .timeline::before {
+    content:''; position:absolute; left:8px; top:0; bottom:0;
+    width:2px; background:var(--border);
+  }
+  .tl-item { position:relative; margin-bottom:24px; }
+  .tl-item:last-child { margin-bottom:0; }
+  .tl-dot {
+    position:absolute; left:-20px; top:2px;
+    width:14px; height:14px; border-radius:50%;
+    border:2px solid var(--bg);
+  }
+  .tl-dot-blue { background:var(--accent); }
+  .tl-dot-cyan { background:var(--accent2); }
+  .tl-dot-green { background:var(--success); }
+  .tl-dot-gold { background:var(--gold); }
+  .tl-dot-red { background:var(--danger); }
+  .tl-date { font-size:11px; color:var(--text3); margin-bottom:4px; }
+  .tl-title { font-size:14px; font-weight:700; margin-bottom:6px; }
+  .tl-content {
+    font-size:13px; color:var(--text2); line-height:1.6;
+    background:var(--surface2); border-radius:8px; padding:12px 14px;
+    border-left:3px solid var(--border);
+  }
+  .tl-meta { display:flex; gap:12px; margin-top:8px; }
+  .tl-tag {
+    font-size:11px; padding:2px 8px; border-radius:4px;
+    background:var(--border); color:var(--text3); font-weight:600;
+  }
+  .tl-result-good { border-left-color:var(--success) !important; }
+  .tl-result-warn { border-left-color:var(--warning) !important; }
+  .tl-result-bad { border-left-color:var(--danger) !important; }
+
+  .next-action-box {
+    background:rgba(59,130,246,0.08);
+    border:1px solid rgba(59,130,246,0.3);
+    border-radius:10px;
+    padding:16px 20px;
+    margin-top:20px;
+  }
+  .nab-title { font-size:11px; font-weight:700; letter-spacing:1px; color:var(--accent); margin-bottom:8px; text-transform:uppercase; }
+  .nab-content { font-size:13px; color:var(--text); line-height:1.5; }
+
+  /* ── 기간 필터 ── */
+  .period-filter-bar {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .period-btn {
+    padding: 7px 14px; border-radius: 8px;
+    font-size: 12px; font-weight: 700;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--text2);
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+    font-family: 'Pretendard', sans-serif;
+  }
+  .period-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .period-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .period-custom-wrap {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px 10px;
+  }
+  .date-input {
+    background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 12px; font-family: 'Pretendard', sans-serif;
+    cursor: pointer; width: 110px;
+  }
+  .date-input::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+
+  /* ── 반응형 ── */
+  @media(max-width:900px){
+    .main { padding:16px; }
+    .kpi-row { grid-template-columns:repeat(2,1fr); }
+    .compare-grid { grid-template-columns:1fr; }
+    .compare-divider { display:none; }
+    .customer-detail-grid { grid-template-columns:1fr; }
+    .dib-kpis { gap:16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">UB<span>CARE</span> 영업CRM</div>
+  <div class="breadcrumb" id="breadcrumb">
+    <span class="crumb active" onclick="goScreen(1)">전체 대시보드</span>
+  </div>
+  <div class="header-right">
+    <span class="role-badge" id="roleBadge">두리앤팜 대리점</span>
+    <span class="date-badge" id="dateBadge"></span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════ SCREEN 1 -->
+<div class="screen active" id="screen1">
+<div class="main">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;">
+    <div>
+      <div class="page-title">영업 성과 대시보드</div>
+      <div class="page-sub" id="periodLabel">기간 로딩 중...</div>
+    </div>
+    <div class="period-filter-bar">
+      <button class="period-btn" data-period="7">최근 7일</button>
+      <button class="period-btn" data-period="30">최근 30일</button>
+      <button class="period-btn active" data-period="90">최근 3개월</button>
+      <button class="period-btn" data-period="180">최근 6개월</button>
+      <button class="period-btn" data-period="365">최근 1년</button>
+      <div class="period-custom-wrap">
+        <input type="date" id="dateFrom" class="date-input">
+        <span style="color:var(--text3);font-size:12px">~</span>
+        <input type="date" id="dateTo" class="date-input">
+        <button class="period-btn" id="customApplyBtn">적용</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 내 대리점 vs Best 비교 -->
+  <div class="compare-section">
+    <div class="compare-title">⚡ 내 대리점 vs Best 대리점 핵심 지표 비교</div>
+    <div class="compare-grid">
+      <!-- 내 대리점 -->
+      <div class="compare-side">
+        <div class="compare-label mine">🏢 두리앤팜 (내 대리점)</div>
+        <div class="kpi-compare-list">
+          <div class="kpi-compare-item highlight-mine">
+            <div><div class="kci-name">1차 접촉기간</div><div class="kci-sub">문의→전화 평균</div></div>
+            <div style="text-align:right"><div class="kci-value warn">1.8일</div></div>
+          </div>
+          <div class="kpi-compare-item highlight-mine">
+            <div><div class="kci-name">2차 접촉기간</div><div class="kci-sub">전화→방문 평균</div></div>
+            <div style="text-align:right"><div class="kci-value bad">4.2일</div></div>
+          </div>
+          <div class="kpi-compare-item highlight-mine">
+            <div><div class="kci-name">방문율</div><div class="kci-sub">전화 후 방문 전환</div></div>
+            <div style="text-align:right"><div class="kci-value warn">62%</div></div>
+          </div>
+          <div class="kpi-compare-item highlight-mine">
+            <div><div class="kci-name">성공률</div><div class="kci-sub">계약 전환율</div></div>
+            <div style="text-align:right"><div class="kci-value warn">38%</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="compare-divider">VS</div>
+      <!-- Best 대리점 -->
+      <div class="compare-side">
+        <div class="compare-label best">🏆 유비강남 (Best)</div>
+        <div class="kpi-compare-list">
+          <div class="kpi-compare-item highlight-best">
+            <div><div class="kci-name">1차 접촉기간</div><div class="kci-sub">문의→전화 평균</div></div>
+            <div style="text-align:right"><div class="kci-value good">0.3일</div></div>
+          </div>
+          <div class="kpi-compare-item highlight-best">
+            <div><div class="kci-name">2차 접촉기간</div><div class="kci-sub">전화→방문 평균</div></div>
+            <div style="text-align:right"><div class="kci-value good">2.1일</div></div>
+          </div>
+          <div class="kpi-compare-item highlight-best">
+            <div><div class="kci-name">방문율</div><div class="kci-sub">전화 후 방문 전환</div></div>
+            <div style="text-align:right"><div class="kci-value good">91%</div></div>
+          </div>
+          <div class="kpi-compare-item highlight-best">
+            <div><div class="kci-name">성공률</div><div class="kci-sub">계약 전환율</div></div>
+            <div style="text-align:right"><div class="kci-value good">67%</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 액션 가이드 -->
+    <div class="action-guide">
+      <div class="action-guide-title">🚨 지금 바로 해야 할 일</div>
+      <div class="action-items">
+        <div class="action-item">방문율 62% → 목표 90%: 아직 방문 안 된 고객 <span class="clickable-num" onclick="goScreen(2,'두리앤팜',true)">14명</span> 오늘 중 방문 일정 확정하세요</div>
+        <div class="action-item">2차 접촉기간 4.2일 → 목표 3일 이내: 전화 후 방문 지연 고객 <span class="clickable-num" onclick="goScreen(2,'두리앤팜',true)">8명</span> 즉시 방문 실행</div>
+        <div class="action-item">1차 접촉 1.8일 → 목표 당일: 신규 문의 즉시 전화 응대 습관화 (Best 대리점 0.3일 달성 중)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 전사 KPI 카드 -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-card-icon">⚡</div>
+      <div class="kpi-card-label">1차 접촉 평균</div>
+      <div class="kpi-card-value cyan">1.2<span style="font-size:20px">일</span></div>
+      <div class="kpi-card-sub">문의→전화 · 목표 당일</div>
+      <div class="kpi-card-bar"><div class="kpi-card-bar-fill" style="width:60%;background:var(--accent2)"></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-icon">📅</div>
+      <div class="kpi-card-label">2차 접촉 평균</div>
+      <div class="kpi-card-value gold">3.1<span style="font-size:20px">일</span></div>
+      <div class="kpi-card-sub">전화→방문 · 목표 3일</div>
+      <div class="kpi-card-bar"><div class="kpi-card-bar-fill" style="width:68%;background:var(--gold)"></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-icon">🏃</div>
+      <div class="kpi-card-label">전체 방문율</div>
+      <div class="kpi-card-value blue">74<span style="font-size:20px">%</span></div>
+      <div class="kpi-card-sub">전국 평균 · 목표 90%</div>
+      <div class="kpi-card-bar"><div class="kpi-card-bar-fill" style="width:74%;background:var(--accent)"></div></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-card-icon">✅</div>
+      <div class="kpi-card-label">전체 성공률</div>
+      <div class="kpi-card-value green">52<span style="font-size:20px">%</span></div>
+      <div class="kpi-card-sub">계약 전환 · 목표 60%</div>
+      <div class="kpi-card-bar"><div class="kpi-card-bar-fill" style="width:52%;background:var(--success)"></div></div>
+    </div>
+  </div>
+
+  <!-- 전국 대리점 순위 -->
+  <div class="section-title">전국 15개 대리점 핵심지표</div>
+  <div class="section-sub">숫자를 클릭하면 해당 대리점의 고객 리스트로 이동합니다</div>
+  <div class="dealer-table-wrap">
+    <table class="dealer-table" id="dealerTable">
+      <thead>
+        <tr>
+          <th>순위</th>
+          <th>대리점</th>
+          <th>1차접촉</th>
+          <th>2차접촉</th>
+          <th>방문율</th>
+          <th>성공률</th>
+          <th>담당고객</th>
+          <th>계약건</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody id="dealerTbody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════ SCREEN 2 -->
+<div class="screen" id="screen2">
+<div class="main">
+  <button class="back-btn" onclick="goScreen(1)">← 전체 대시보드로</button>
+
+  <div class="dealer-info-bar">
+    <div class="dib-left">
+      <div class="dib-name" id="d2-name"></div>
+      <div class="dib-meta" id="d2-meta"></div>
+    </div>
+    <div class="dib-kpis">
+      <div class="dib-kpi"><div class="dib-kpi-v" id="d2-visit" style="color:var(--accent)"></div><div class="dib-kpi-l">방문율</div></div>
+      <div class="dib-kpi"><div class="dib-kpi-v" id="d2-c1" style="color:var(--accent2)"></div><div class="dib-kpi-l">1차접촉</div></div>
+      <div class="dib-kpi"><div class="dib-kpi-v" id="d2-c2" style="color:var(--gold)"></div><div class="dib-kpi-l">2차접촉</div></div>
+      <div class="dib-kpi"><div class="dib-kpi-v" id="d2-success" style="color:var(--success)"></div><div class="dib-kpi-l">성공률</div></div>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <span style="font-size:12px;color:var(--text3);">필터:</span>
+    <button class="filter-btn active" onclick="filterCustomers('all',this)">전체</button>
+    <button class="filter-btn" onclick="filterCustomers('urgent',this)">🚨 즉시조치필요</button>
+    <button class="filter-btn" onclick="filterCustomers('inprogress',this)">진행중</button>
+    <button class="filter-btn" onclick="filterCustomers('success',this)">✅ 계약완료</button>
+    <button class="filter-btn" onclick="filterCustomers('fail',this)">❌ 이탈</button>
+  </div>
+
+  <div class="customer-table-wrap">
+    <table class="customer-table">
+      <thead>
+        <tr>
+          <th>고객명</th>
+          <th>병원/기관</th>
+          <th>문의일</th>
+          <th>1차접촉</th>
+          <th>2차접촉(방문)</th>
+          <th>영업단계</th>
+          <th>방문여부</th>
+          <th>상태</th>
+        </tr>
+      </thead>
+      <tbody id="customerTbody"></tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════ SCREEN 3 -->
+<div class="screen" id="screen3">
+<div class="main">
+  <button class="back-btn" id="backBtn3" onclick="goScreen(2)">← 고객 리스트로</button>
+  <div class="customer-detail-grid">
+    <div class="customer-info-card">
+      <div class="cust-avatar" id="d3-avatar"></div>
+      <div class="cust-name" id="d3-name"></div>
+      <div class="cust-hospital" id="d3-hospital"></div>
+      <div class="info-divider"></div>
+      <div class="info-row"><span class="info-label">담당 영업사원</span><span class="info-value" id="d3-sales"></span></div>
+      <div class="info-row"><span class="info-label">문의 채널</span><span class="info-value" id="d3-channel"></span></div>
+      <div class="info-row"><span class="info-label">문의일</span><span class="info-value" id="d3-inqdate"></span></div>
+      <div class="info-row"><span class="info-label">관심 상품</span><span class="info-value" id="d3-product"></span></div>
+      <div class="info-row"><span class="info-label">현재 단계</span><span class="info-value" id="d3-stage"></span></div>
+      <div class="kpi-mini-grid">
+        <div class="kpi-mini"><div class="kpi-mini-v" id="d3-c1" style="color:var(--accent2)"></div><div class="kpi-mini-l">1차 접촉</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-v" id="d3-c2" style="color:var(--gold)"></div><div class="kpi-mini-l">2차 접촉</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-v" id="d3-visited" style="color:var(--success)"></div><div class="kpi-mini-l">방문여부</div></div>
+        <div class="kpi-mini"><div class="kpi-mini-v" id="d3-result" style="color:var(--accent)"></div><div class="kpi-mini-l">결과</div></div>
+      </div>
+    </div>
+    <div class="timeline-card">
+      <div class="timeline-title">📋 영업 진행 과정</div>
+      <div class="timeline" id="d3-timeline"></div>
+      <div class="next-action-box" id="d3-nextaction"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ── 날짜 유틸 ──
+const today = new Date(); today.setHours(0,0,0,0);
+function daysAgo(n) { const d = new Date(today); d.setDate(d.getDate()-n); return d; }
+function fmtDate(d) { return d.toISOString().slice(0,10); }
+function parseDate(s) { const d = new Date(s); d.setHours(0,0,0,0); return d; }
+
+document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+
+// ── 목표 기준 ──
+const GOAL = { c1: 1, c2: 3, visit: 80, success: 80 };
+
+// ── 전체 고객 raw 데이터 (대리점별, 문의접수일 포함) ──
+const allRawCustomers = {
+  '유비강남':    genCustomers('유비강남',    42, [0.2,0.5], [1.5,2.5], 91, 67),
+  '에버넷':      genCustomers('에버넷',      55, [0.3,0.8], [1.8,2.8], 88, 61),
+  '이안메드':    genCustomers('이안메드',    48, [0.5,1.0], [2.0,3.0], 85, 58),
+  '세일메디팜':  genCustomers('세일메디팜',  44, [0.6,1.1], [2.2,3.2], 82, 55),
+  '비즈현메디칼':genCustomers('비즈현메디칼',38, [0.8,1.3], [2.5,3.5], 79, 51),
+  '디케이팜케어':genCustomers('디케이팜케어',41, [0.9,1.4], [2.8,3.8], 76, 49),
+  '디원케어':    genCustomers('디원케어',    35, [1.0,1.6], [3.0,4.0], 74, 46),
+  '유비경인':    genCustomers('유비경인',    40, [1.2,1.8], [3.2,4.4], 68, 44),
+  '디라인':      genCustomers('디라인',      36, [1.3,1.9], [3.3,4.5], 65, 41),
+  '두리앤팜':    genCustomers('두리앤팜',    30, [1.5,2.1], [3.8,4.8], 62, 38),
+  '메디케어':    genCustomers('메디케어',    28, [1.7,2.3], [4.0,5.0], 58, 35),
+  '올데이팜':    genCustomers('올데이팜',    26, [1.9,2.5], [4.2,5.4], 55, 32),
+  '이오앤팜':    genCustomers('이오앤팜',    24, [2.1,2.7], [4.6,5.8], 51, 28),
+  '아이포커스':  genCustomers('아이포커스',  20, [2.3,2.9], [4.9,6.1], 48, 25),
+  '동원메디텍':  genCustomers('동원메디텍',  18, [2.6,3.2], [5.2,6.6], 44, 21),
+};
+
+// 샘플 고객 생성기 (문의접수일 최근 1년 랜덤 분포)
+function genCustomers(dealerName, count, c1Range, c2Range, visitRate, successRate) {
+  const names = ['김민준','이서연','박지호','최수아','정태양','한미래','윤서준','강지우','임소윤','조현우',
+                 '신예은','오민석','황지수','안재원','배다은','유승현','문채원','노준혁','심나연','전도윤'];
+  const hospitals = ['연세내과','미래정형외과','좋은치과','서울안과','행복의원','365의원','이든의원',
+                     '새벽의원','한마음의원','건강한의원','밝은치과','튼튼정형외과','맑은안과','참의원'];
+  const products = ['EMR Pro','EMR Basic','EMR + PACS','치과 EMR','한의 EMR'];
+  const channels = ['홈페이지','전화','이메일','SNS','지인소개','전시회'];
+  const salesmen = ['이지훈','최현우','박성민','김도희'];
+
+  return Array.from({length: count}, (_, i) => {
+    // 문의 접수일: 최근 365일 중 랜덤
+    const daysBack = Math.floor(Math.random() * 365);
+    const inquiryDate = fmtDate(daysAgo(daysBack));
+
+    const c1Val = +(c1Range[0] + Math.random()*(c1Range[1]-c1Range[0])).toFixed(1);
+    const c2Val = +(c2Range[0] + Math.random()*(c2Range[1]-c2Range[0])).toFixed(1);
+    const visited = Math.random()*100 < visitRate;
+    const success = visited && Math.random()*100 < successRate;
+    const urgent = !visited && c2Val > GOAL.c2;
+
+    let stage = 1;
+    if (c1Val > 0) stage = 2;
+    if (visited) stage = 3;
+    if (stage===3 && Math.random()>0.4) stage = 4;
+    if (success) stage = 4;
+
+    const status = success ? 'success' : urgent ? 'urgent' : 'inprogress';
+
+    return {
+      id: i+1,
+      name: names[i % names.length],
+      hospital: hospitals[i % hospitals.length],
+      inquiryDate,
+      c1: c1Val <= 0.5 ? '당일' : c1Val+'일',
+      c1Val,
+      c2: c2Val+'일',
+      c2Val,
+      stage, visited,
+      status, urgent,
+      sales: salesmen[i % salesmen.length],
+      channel: channels[i % channels.length],
+      product: products[i % products.length],
+      result: success?'계약완료': visited?'진행중': c1Val>GOAL.c1?'접촉지연':'방문미진행',
+      timeline: [
+        {date: inquiryDate, title:'문의 접수', type:'blue', content:'신규 문의가 CRM에 자동 등록되었습니다.', tags:[channels[i%channels.length]], result:'normal'},
+        ...(c1Val > 0 ? [{date: fmtDate(new Date(new Date(inquiryDate).getTime()+c1Val*86400000)), title:'1차 접촉 (전화)', type:'cyan', content:`전화 상담 완료. 제품 관심 확인.`, tags:['전화', c1Val<=GOAL.c1?'목표달성':'지연'], result: c1Val<=GOAL.c1?'good':'warn'}] : []),
+        ...(visited ? [{date: fmtDate(new Date(new Date(inquiryDate).getTime()+(c1Val+c2Val)*86400000)), title:'2차 접촉 (방문)', type:'gold', content:'방문 데모 진행. 제품 시연 완료.', tags:['방문', c2Val<=GOAL.c2?'목표달성':'지연'], result: c2Val<=GOAL.c2?'good':'warn'}] : []),
+        ...(success ? [{date: fmtDate(new Date(new Date(inquiryDate).getTime()+(c1Val+c2Val+7)*86400000)), title:'계약 체결 ✅', type:'green', content:'최종 계약 완료.', tags:['계약'], result:'good'}] : []),
+      ],
+      nextAction: urgent ? `🚨 즉시 조치 필요: ${!visited?'방문 일정 즉시 확정':'접촉 재시도'}` : success ? '설치 및 교육 일정 조율' : '다음 영업 단계 진행'
+    };
+  });
+}
+
+// ── 기간 필터 상태 ──
+let filterFrom = daysAgo(90);
+let filterTo   = today;
+
+// ── 기간 필터 적용 후 대리점별 집계 ──
+function calcDealerStats() {
+  return ['유비강남','에버넷','이안메드','세일메디팜','비즈현메디칼','디케이팜케어','디원케어',
+          '유비경인','디라인','두리앤팜','메디케어','올데이팜','이오앤팜','아이포커스','동원메디텍']
+  .map(name => {
+    const region = {
+      '유비강남':'강남·서초·강동·송파·하남','에버넷':'수원·성남·분당·용인 외',
+      '이안메드':'은평·일산·고양·파주·종로 외','세일메디팜':'강북·노원·도봉·의정부·남양주 외',
+      '비즈현메디칼':'부천·구로·금천·강서·양천 외','디케이팜케어':'대구·경산·구미·김천·안동 외',
+      '디원케어':'부산·울산·양산','유비경인':'인천·시흥·김포·안양·안산 외',
+      '디라인':'경남·창원·김해·진주·거제 외','두리앤팜':'전남 전체·광주',
+      '메디케어':'충북 전체·세종·연기군','올데이팜':'충남 전체·영동·옥천',
+      '이오앤팜':'전주·전북 전체','아이포커스':'강원 전체','동원메디텍':'포항·경주·영천·영덕·울진'
+    }[name];
+
+    // 기간 필터 적용
+    const filtered = (allRawCustomers[name]||[]).filter(c => {
+      const d = parseDate(c.inquiryDate);
+      return d >= filterFrom && d <= filterTo;
+    });
+
+    const total = filtered.length;
+    if (total === 0) return { name, region, visit:0, c1:0, c2:0, success:0, total:0, contract:0 };
+
+    const visited    = filtered.filter(c => c.visited);
+    const contracted = filtered.filter(c => c.status==='success');
+    const visit    = Math.round(visited.length / total * 100);
+    const success  = total > 0 ? Math.round(contracted.length / total * 100) : 0;
+    const c1       = total > 0 ? +( filtered.reduce((s,c)=>s+c.c1Val,0)/total ).toFixed(1) : 0;
+    const c2       = visited.length > 0 ? +( visited.reduce((s,c)=>s+c.c2Val,0)/visited.length ).toFixed(1) : 0;
+    const contract = contracted.length;
+
+    return { name, region, visit, c1, c2, success, total, contract };
+  });
+}
+
+// ── 대리점 데이터 (동적) ──
+let dealers = [];
+
+function refreshDealers() {
+  const raw = calcDealerStats();
+  raw.forEach(d => { d.score = calcScore(d); });
+  raw.sort((a,b) => b.score - a.score);
+  raw.forEach((d,i) => {
+    d.rank = i+1;
+    const metCount = [d.c1<=GOAL.c1&&d.c1>0, d.c2<=GOAL.c2&&d.c2>0, d.visit>=GOAL.visit, d.success>=GOAL.success].filter(Boolean).length;
+    d.status = metCount===4?'excellent':metCount===3?'good':metCount===2?'normal':metCount===1?'warning':'danger';
+  });
+  dealers = raw;
+}
+
+function calcScore(d) {
+  if (d.total === 0) return 0;
+  const s1 = d.c1 > 0 ? Math.min(100, (GOAL.c1/d.c1)*100) : 0;
+  const s2 = d.c2 > 0 ? Math.min(100, (GOAL.c2/d.c2)*100) : 0;
+  const s3 = Math.min(100, (d.visit/GOAL.visit)*100);
+  const s4 = Math.min(100, (d.success/GOAL.success)*100);
+  return (s1+s2+s3+s4)/4;
+}
+
+
+// ── 고객 데이터 ──
+const customersMap = {
+  '두리앤팜': [
+    { id:1, name:'김민준', hospital:'강동미래의원', inquiryDate:'2025-05-01', c1:'당일', c2:'2일', stage:4, visited:true, status:'success', urgent:false,
+      sales:'이지훈', channel:'홈페이지', product:'EMR Pro', result:'계약완료',
+      timeline:[
+        {date:'2025-05-01',title:'홈페이지 문의 접수',type:'blue',content:'EMR 시스템 도입 문의. 현재 타사 제품 사용 중이며 기능 개선 필요성 느낌.',tags:['1차접촉당일'],result:'normal'},
+        {date:'2025-05-01',title:'당일 전화 상담 (1차 접촉)',type:'cyan',content:'원장님 직접 통화. 현 시스템 불만사항 파악: 처방전 연동 속도, UI 복잡성. 방문 데모 수락.',tags:['전화','18분'],result:'good'},
+        {date:'2025-05-03',title:'방문 데모 진행 (2차 접촉)',type:'gold',content:'1시간 30분 데모. EMR Pro 처방 연동 속도 시연. 간호사 2명도 동석하여 긍정적 반응. 견적서 요청.',tags:['방문','데모'],result:'good'},
+        {date:'2025-05-08',title:'견적서 제출 및 협상',type:'blue',content:'3개월 무상 지원 조건으로 최종 견적 제출. 경쟁사 대비 가격 우위 설명.',tags:['견적'],result:'good'},
+        {date:'2025-05-12',title:'계약 체결 ✅',type:'green',content:'연간 계약 체결 완료. 6월 1일 설치 예정. 원장님 지인 병원 소개 약속 받음.',tags:['계약','레퍼럴확보'],result:'good'},
+      ],
+      nextAction:'설치 일정 확정 및 직원 교육 일정 조율 (6월 1일 목표)'
+    },
+    { id:2, name:'박서연', hospital:'서울아이정형외과', inquiryDate:'2025-05-03', c1:'1일', c2:'3일', stage:3, visited:true, status:'inprogress', urgent:false,
+      sales:'최현우', channel:'전화', product:'EMR + PACS', result:'견적협의중',
+      timeline:[
+        {date:'2025-05-03',title:'전화 문의 접수',type:'blue',content:'PACS 연동 EMR 문의. 현재 영상의학과 연동이 안 되어 불편 호소.',tags:['1차접촉1일'],result:'normal'},
+        {date:'2025-05-04',title:'전화 상담 (1차 접촉)',type:'cyan',content:'15분 통화. PACS 연동 기능 설명. 데모 방문 일정 협의.',tags:['전화'],result:'good'},
+        {date:'2025-05-06',title:'방문 데모 (2차 접촉)',type:'gold',content:'PACS+EMR 통합 데모. 원장님 만족도 높음. 원무팀장 추가 교육 요청.',tags:['방문','데모'],result:'good'},
+        {date:'2025-05-10',title:'원무팀 추가 교육',type:'blue',content:'원무팀 3명 대상 1시간 교육. 전환 의향 강함.',tags:['교육'],result:'good'},
+      ],
+      nextAction:'오늘 중 최종 견적서 발송 → 이번 주 내 계약 마무리 목표'
+    },
+    { id:3, name:'이수현', hospital:'동부연세내과', inquiryDate:'2025-05-05', c1:'2일', c2:'5일', stage:2, visited:false, status:'urgent', urgent:true,
+      sales:'이지훈', channel:'이메일', product:'EMR Basic', result:'방문미진행',
+      timeline:[
+        {date:'2025-05-05',title:'이메일 문의 접수',type:'blue',content:'소규모 내과 원장. EMR Basic 관심. 예산 제한 언급.',tags:['문의'],result:'normal'},
+        {date:'2025-05-07',title:'전화 상담 (1차 접촉 2일 소요)',type:'cyan',content:'10분 통화. 방문 데모 일정 협의했으나 "다음 주에 연락달라"며 보류.',tags:['전화','보류'],result:'warn'},
+      ],
+      nextAction:'🚨 방문 미진행 5일 초과! 오늘 반드시 방문 일정 확정. Best 대리점(강남)은 3일 이내 100% 방문 완료'
+    },
+    { id:4, name:'정다은', hospital:'강동아동치과', inquiryDate:'2025-05-06', c1:'당일', c2:'4일', stage:2, visited:false, status:'urgent', urgent:true,
+      sales:'최현우', channel:'SNS', product:'치과EMR', result:'방문미진행',
+      timeline:[
+        {date:'2025-05-06',title:'SNS 광고 문의',type:'blue',content:'치과 특화 EMR 관심. 원장 직접 DM 발송.',tags:['당일접촉'],result:'good'},
+        {date:'2025-05-06',title:'당일 전화 상담',type:'cyan',content:'15분 통화. 치과 특화 기능(치식도, 방사선 연동) 소개. 관심 높음.',tags:['전화'],result:'good'},
+        {date:'2025-05-10',title:'방문 약속 취소',type:'blue',content:'원장 스케줄로 취소. 재일정 미확정.',tags:['취소'],result:'warn'},
+      ],
+      nextAction:'🚨 방문 지연 4일! 오늘 재방문 약속 확정. 취소 후 재접촉 골든타임 내 실행 필요'
+    },
+    { id:5, name:'한지호', hospital:'성동365의원', inquiryDate:'2025-04-20', c1:'당일', c2:'2일', stage:4, visited:true, status:'success', urgent:false,
+      sales:'이지훈', channel:'지인소개', product:'EMR Pro', result:'계약완료',
+      timeline:[
+        {date:'2025-04-20',title:'지인 소개 문의',type:'blue',content:'기존 고객 소개. 신뢰도 높은 상태로 시작.',tags:['소개','당일접촉'],result:'good'},
+        {date:'2025-04-20',title:'당일 전화',type:'cyan',content:'바로 방문 요청. 내일 방문 일정 확정.',tags:['전화'],result:'good'},
+        {date:'2025-04-22',title:'방문 미팅',type:'gold',content:'소개 고객이라 신뢰 높음. 1회 방문으로 계약 의향 확인.',tags:['방문'],result:'good'},
+        {date:'2025-04-25',title:'계약 완료',type:'green',content:'2년 장기 계약. 추가 지점 도입 논의 중.',tags:['계약'],result:'good'},
+      ],
+      nextAction:'추가 지점 도입 제안서 준비 (2지점 추가 가능성)'
+    },
+    { id:6, name:'윤재원', hospital:'광진연합의원', inquiryDate:'2025-05-08', c1:'3일', c2:'없음', stage:1, visited:false, status:'urgent', urgent:true,
+      sales:'최현우', channel:'홈페이지', product:'EMR Basic', result:'전화미연결',
+      timeline:[
+        {date:'2025-05-08',title:'홈페이지 문의',type:'blue',content:'EMR 기본 패키지 문의.',tags:['문의'],result:'normal'},
+        {date:'2025-05-11',title:'전화 시도 실패 (1차 접촉 3일 지연)',type:'cyan',content:'3회 전화 시도 → 모두 부재중. 문자 남김.',tags:['미연결','지연'],result:'bad'},
+      ],
+      nextAction:'🚨 1차 접촉 3일 지연! 오전 9시, 점심 후 12시 30분 집중 전화. 연결 안 되면 직접 방문으로 전환'
+    },
+  ]
+};
+
+// 기본 고객 데이터 생성 함수
+function getCustomers(dealerName) {
+  const all = allRawCustomers[dealerName] || [];
+  return all.filter(c => {
+    const d = parseDate(c.inquiryDate);
+    return d >= filterFrom && d <= filterTo;
+  });
+}
+
+// ── 전체 화면 갱신 ──
+function fullRefresh() {
+  refreshDealers();
+  renderDealerTable();
+  renderCompare();
+
+  // 기간 라벨 업데이트
+  const from = filterFrom.toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+  const to   = filterTo.toLocaleDateString('ko-KR',{month:'long',day:'numeric'});
+  document.getElementById('periodLabel').textContent = `${from} ~ ${to} 신규 문의 기준 · 전국 15개 대리점`;
+
+  // 전사 KPI 카드 값 업데이트
+  const allFiltered = dealers;
+  const avgC1 = allFiltered.filter(d=>d.c1>0).length > 0
+    ? (allFiltered.filter(d=>d.c1>0).reduce((s,d)=>s+d.c1,0)/allFiltered.filter(d=>d.c1>0).length).toFixed(1) : '-';
+  const avgC2 = allFiltered.filter(d=>d.c2>0).length > 0
+    ? (allFiltered.filter(d=>d.c2>0).reduce((s,d)=>s+d.c2,0)/allFiltered.filter(d=>d.c2>0).length).toFixed(1) : '-';
+  const avgVisit = allFiltered.length > 0
+    ? Math.round(allFiltered.reduce((s,d)=>s+d.visit,0)/allFiltered.length) : 0;
+  const avgSuccess = allFiltered.length > 0
+    ? Math.round(allFiltered.reduce((s,d)=>s+d.success,0)/allFiltered.length) : 0;
+
+  const vals = document.querySelectorAll('.kpi-card-value');
+  vals[0].innerHTML = `${avgC1}<span style="font-size:20px">일</span>`;
+  vals[1].innerHTML = `${avgC2}<span style="font-size:20px">일</span>`;
+  vals[2].innerHTML = `${avgVisit}<span style="font-size:20px">%</span>`;
+  vals[3].innerHTML = `${avgSuccess}<span style="font-size:20px">%</span>`;
+
+  // 바 업데이트
+  const bars = document.querySelectorAll('.kpi-card-bar-fill');
+  bars[0].style.width = Math.min(100, (GOAL.c1/Math.max(avgC1,0.1))*100)+'%';
+  bars[1].style.width = Math.min(100, (GOAL.c2/Math.max(avgC2,0.1))*100)+'%';
+  bars[2].style.width = avgVisit+'%';
+  bars[3].style.width = avgSuccess+'%';
+}
+
+// ── 기간 필터 이벤트 ──
+document.querySelectorAll('.period-btn[data-period]').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.period-btn[data-period]').forEach(b=>b.classList.remove('active'));
+    this.classList.add('active');
+    const days = parseInt(this.dataset.period);
+    filterFrom = daysAgo(days);
+    filterTo   = today;
+    // 날짜 직접입력 초기화
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value   = '';
+    fullRefresh();
+  });
+});
+
+document.getElementById('customApplyBtn').addEventListener('click', function() {
+  const from = document.getElementById('dateFrom').value;
+  const to   = document.getElementById('dateTo').value;
+  if (!from || !to) { alert('시작일과 종료일을 모두 입력해주세요.'); return; }
+  if (from > to)    { alert('시작일이 종료일보다 늦습니다.'); return; }
+  document.querySelectorAll('.period-btn[data-period]').forEach(b=>b.classList.remove('active'));
+  filterFrom = parseDate(from);
+  filterTo   = parseDate(to);
+  fullRefresh();
+});
+
+
+// ── 테이블 렌더링 ──
+function renderDealerTable() {
+  const tbody = document.getElementById('dealerTbody');
+  tbody.innerHTML = dealers.map(d => {
+    const rankClass = d.rank===1?'rank-1':d.rank===2?'rank-2':d.rank===3?'rank-3':'rank-n';
+    // 새 목표 기준 색상
+    const c1Color    = d.c1 <= GOAL.c1           ? 'var(--success)' : d.c1 <= GOAL.c1*1.5   ? 'var(--warning)' : 'var(--danger)';
+    const c2Color    = d.c2 <= GOAL.c2           ? 'var(--success)' : d.c2 <= GOAL.c2*1.5   ? 'var(--warning)' : 'var(--danger)';
+    const visitColor = d.visit >= GOAL.visit      ? 'var(--success)' : d.visit >= GOAL.visit*0.75 ? 'var(--warning)' : 'var(--danger)';
+    const succColor  = d.success >= GOAL.success  ? 'var(--success)' : d.success >= GOAL.success*0.75 ? 'var(--warning)' : 'var(--danger)';
+    const pillClass  = d.status==='excellent'||d.status==='good' ? 'pill-green' : d.status==='normal' ? 'pill-yellow' : d.status==='warning' ? 'pill-yellow' : 'pill-red';
+    const pillText   = d.status==='excellent'?'목표달성':d.status==='good'?'우수':d.status==='normal'?'보통':d.status==='warning'?'주의':'위험';
+    const isMe = d.name==='두리앤팜';
+    return `<tr class="${isMe?'my-row':''}" onclick="goScreen(2,'${d.name}')">
+      <td><span class="rank-badge ${rankClass}">${d.rank}</span></td>
+      <td><strong>${d.name}</strong>${isMe?'<span class="my-tag">내 대리점</span>':''}<br><span style="font-size:11px;color:var(--text3)">${d.region}</span></td>
+      <td><span style="color:${c1Color};font-weight:700">${d.c1}일</span></td>
+      <td><span style="color:${c2Color};font-weight:700">${d.c2}일</span></td>
+      <td><span class="clickable-num" style="color:${visitColor}" onclick="event.stopPropagation();goScreen(2,'${d.name}')">${d.visit}%</span></td>
+      <td><span style="color:${succColor};font-weight:700">${d.success}%</span></td>
+      <td class="clickable-num" onclick="event.stopPropagation();goScreen(2,'${d.name}')">${d.total}명</td>
+      <td><strong>${d.contract}</strong></td>
+      <td><span class="pill ${pillClass}">${pillText}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+let currentDealer = null;
+let allCustomers = [];
+
+function renderCustomerTable(customers) {
+  const tbody = document.getElementById('customerTbody');
+  const stageNames = ['','문의접수','전화상담','방문데모','견적협의','계약완료/이탈'];
+  const stageClass = ['','stage-1','stage-2','stage-3','stage-4','stage-4'];
+  tbody.innerHTML = customers.map(c => {
+    const sc = c.status==='success'?'stage-4':c.status==='urgent'?'stage-5':c.status==='fail'?'stage-5':'stage-2';
+    const stageLabel = stageNames[Math.min(c.stage,5)];
+    const visitBadge = c.visited?`<span class="pill pill-green">✓ 방문완료</span>`:`<span class="pill pill-red">✗ 미방문</span>`;
+    const urgentTag = c.urgent?'<span style="color:var(--danger);font-weight:700;font-size:11px;margin-left:4px">🚨 긴급</span>':'';
+    return `<tr onclick="goScreen(3,null,null,${c.id})">
+      <td><strong>${c.name}</strong>${urgentTag}</td>
+      <td>${c.hospital}</td>
+      <td style="color:var(--text3)">${c.inquiryDate}</td>
+      <td>${c.c1}</td>
+      <td>${c.c2}</td>
+      <td><span class="stage-badge ${stageClass[Math.min(c.stage,5)]}">${stageLabel}</span></td>
+      <td>${visitBadge}</td>
+      <td>${c.result}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterCustomers(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  if(type==='all') renderCustomerTable(allCustomers);
+  else if(type==='urgent') renderCustomerTable(allCustomers.filter(c=>c.urgent||c.status==='urgent'));
+  else if(type==='inprogress') renderCustomerTable(allCustomers.filter(c=>c.status==='inprogress'));
+  else if(type==='success') renderCustomerTable(allCustomers.filter(c=>c.status==='success'));
+  else if(type==='fail') renderCustomerTable(allCustomers.filter(c=>c.status==='fail'));
+}
+
+// ── 화면 전환 ──
+function goScreen(n, dealerName, urgentFilter, customerId) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen'+n).classList.add('active');
+  updateBreadcrumb(n, dealerName, customerId);
+
+  if(n===2 && dealerName) {
+    currentDealer = dealers.find(d=>d.name===dealerName);
+    allCustomers = getCustomers(dealerName);
+    document.getElementById('d2-name').textContent = `${dealerName} 대리점`;
+    document.getElementById('d2-meta').textContent = `담당 고객 ${currentDealer.total}명 · 계약 ${currentDealer.contract}건`;
+    document.getElementById('d2-visit').textContent = currentDealer.visit+'%';
+    document.getElementById('d2-c1').textContent = currentDealer.c1+'일';
+    document.getElementById('d2-c2').textContent = currentDealer.c2+'일';
+    document.getElementById('d2-success').textContent = currentDealer.success+'%';
+    // 필터 리셋
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelector('.filter-btn').classList.add('active');
+    if(urgentFilter) {
+      setTimeout(()=>{
+        const urgentBtn = document.querySelectorAll('.filter-btn')[1];
+        filterCustomers('urgent', urgentBtn);
+      },100);
+    } else {
+      renderCustomerTable(allCustomers);
+    }
+  }
+  if(n===3 && customerId) {
+    const c = allCustomers.find(x=>x.id===customerId);
+    if(!c) return;
+    document.getElementById('d3-avatar').textContent = c.name[0];
+    document.getElementById('d3-name').textContent = c.name;
+    document.getElementById('d3-hospital').textContent = c.hospital;
+    document.getElementById('d3-sales').textContent = c.sales;
+    document.getElementById('d3-channel').textContent = c.channel;
+    document.getElementById('d3-inqdate').textContent = c.inquiryDate;
+    document.getElementById('d3-product').textContent = c.product;
+    const stages=['','문의접수','전화상담','방문데모','견적협의','계약완료'];
+    document.getElementById('d3-stage').textContent = stages[Math.min(c.stage,5)];
+    document.getElementById('d3-c1').textContent = c.c1;
+    document.getElementById('d3-c2').textContent = c.c2;
+    document.getElementById('d3-visited').textContent = c.visited?'완료':'미방문';
+    document.getElementById('d3-result').textContent = c.result;
+    // 타임라인
+    const dotClass = {blue:'tl-dot-blue',cyan:'tl-dot-cyan',green:'tl-dot-green',gold:'tl-dot-gold',red:'tl-dot-red'};
+    const resultClass = {good:'tl-result-good',warn:'tl-result-warn',bad:'tl-result-bad',normal:''};
+    document.getElementById('d3-timeline').innerHTML = c.timeline.map(t=>`
+      <div class="tl-item">
+        <div class="tl-dot ${dotClass[t.type]||'tl-dot-blue'}"></div>
+        <div class="tl-date">${t.date}</div>
+        <div class="tl-title">${t.title}</div>
+        <div class="tl-content ${resultClass[t.result]||''}">${t.content}</div>
+        <div class="tl-meta">${t.tags.map(tag=>`<span class="tl-tag">${tag}</span>`).join('')}</div>
+      </div>
+    `).join('');
+    const urgent = c.urgent||c.status==='urgent';
+    document.getElementById('d3-nextaction').innerHTML = `
+      <div class="nab-title">${urgent?'🚨 즉시 조치 필요':'📌 다음 액션'}</div>
+      <div class="nab-content">${c.nextAction}</div>
+    `;
+    document.getElementById('d3-nextaction').style.borderColor = urgent?'rgba(239,68,68,0.4)':'rgba(59,130,246,0.3)';
+    document.getElementById('d3-nextaction').style.background = urgent?'rgba(239,68,68,0.08)':'rgba(59,130,246,0.08)';
+  }
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateBreadcrumb(n, dealerName, customerId) {
+  const bc = document.getElementById('breadcrumb');
+  if(n===1) {
+    bc.innerHTML=`<span class="crumb active">전체 대시보드</span>`;
+  } else if(n===2) {
+    bc.innerHTML=`<span class="crumb" onclick="goScreen(1)">전체 대시보드</span><span class="sep">›</span><span class="crumb active">${dealerName||currentDealer?.name} 대리점</span>`;
+  } else if(n===3) {
+    const c = allCustomers.find(x=>x.id===customerId);
+    bc.innerHTML=`<span class="crumb" onclick="goScreen(1)">전체 대시보드</span><span class="sep">›</span><span class="crumb" onclick="goScreen(2)">${currentDealer?.name} 대리점</span><span class="sep">›</span><span class="crumb active">${c?.name||'고객상세'}</span>`;
+  }
+}
+
+// ── 초기화 ──
+fullRefresh();
+
+// ── 비교 섹션 동적 렌더링 ──
+function renderCompare() {
+  const me   = dealers.find(d => d.name === '두리앤팜') || dealers[dealers.length-1];
+  const best = dealers[0];
+  if (!me || !best) return;
+
+  document.getElementById('roleBadge').textContent = me.name + ' 대리점';
+  document.querySelector('.compare-label.best').textContent = '🏆 ' + best.name + ' (Best)';
+  document.querySelector('.compare-label.mine').textContent = '🏢 ' + me.name + ' (내 대리점)';
+
+  function colorC1(v) { return v<=GOAL.c1&&v>0?'good':v<=GOAL.c1*1.5&&v>0?'warn':'bad'; }
+  function colorC2(v) { return v<=GOAL.c2&&v>0?'good':v<=GOAL.c2*1.5&&v>0?'warn':'bad'; }
+  function colorV(v)  { return v>=GOAL.visit?'good':v>=GOAL.visit*0.75?'warn':'bad'; }
+  function colorS(v)  { return v>=GOAL.success?'good':v>=GOAL.success*0.75?'warn':'bad'; }
+
+  const mineList = document.querySelectorAll('.compare-side')[0].querySelector('.kpi-compare-list');
+  mineList.innerHTML = `
+    <div class="kpi-compare-item highlight-mine"><div><div class="kci-name">1차 접촉기간</div><div class="kci-sub">문의→전화 평균 · 목표 ${GOAL.c1}일 이내</div></div><div style="text-align:right"><div class="kci-value ${colorC1(me.c1)}">${me.c1||'-'}일</div></div></div>
+    <div class="kpi-compare-item highlight-mine"><div><div class="kci-name">2차 접촉기간</div><div class="kci-sub">전화→방문 평균 · 목표 ${GOAL.c2}일 이내</div></div><div style="text-align:right"><div class="kci-value ${colorC2(me.c2)}">${me.c2||'-'}일</div></div></div>
+    <div class="kpi-compare-item highlight-mine"><div><div class="kci-name">방문율</div><div class="kci-sub">전화 후 방문 전환 · 목표 ${GOAL.visit}%</div></div><div style="text-align:right"><div class="kci-value ${colorV(me.visit)}">${me.visit}%</div></div></div>
+    <div class="kpi-compare-item highlight-mine"><div><div class="kci-name">성공률</div><div class="kci-sub">계약 전환율 · 목표 ${GOAL.success}%</div></div><div style="text-align:right"><div class="kci-value ${colorS(me.success)}">${me.success}%</div></div></div>
+  `;
+
+  const bestList = document.querySelectorAll('.compare-side')[1].querySelector('.kpi-compare-list');
+  bestList.innerHTML = `
+    <div class="kpi-compare-item highlight-best"><div><div class="kci-name">1차 접촉기간</div><div class="kci-sub">문의→전화 평균 · 목표 ${GOAL.c1}일 이내</div></div><div style="text-align:right"><div class="kci-value ${colorC1(best.c1)}">${best.c1||'-'}일</div></div></div>
+    <div class="kpi-compare-item highlight-best"><div><div class="kci-name">2차 접촉기간</div><div class="kci-sub">전화→방문 평균 · 목표 ${GOAL.c2}일 이내</div></div><div style="text-align:right"><div class="kci-value ${colorC2(best.c2)}">${best.c2||'-'}일</div></div></div>
+    <div class="kpi-compare-item highlight-best"><div><div class="kci-name">방문율</div><div class="kci-sub">전화 후 방문 전환 · 목표 ${GOAL.visit}%</div></div><div style="text-align:right"><div class="kci-value ${colorV(best.visit)}">${best.visit}%</div></div></div>
+    <div class="kpi-compare-item highlight-best"><div><div class="kci-name">성공률</div><div class="kci-sub">계약 전환율 · 목표 ${GOAL.success}%</div></div><div style="text-align:right"><div class="kci-value ${colorS(best.success)}">${best.success}%</div></div></div>
+  `;
+
+  const actions = [];
+  if (me.c1 > GOAL.c1)       actions.push(`1차 접촉 ${me.c1}일 → 목표 ${GOAL.c1}일 이내: 신규 문의 당일 전화 응대 필수 (${best.name} ${best.c1}일 달성 중)`);
+  if (me.c2 > GOAL.c2)       actions.push(`2차 접촉 ${me.c2}일 → 목표 ${GOAL.c2}일 이내: 전화 후 방문 지연 고객 즉시 방문 실행`);
+  if (me.visit < GOAL.visit)  actions.push(`방문율 ${me.visit}% → 목표 ${GOAL.visit}%: 미방문 고객 오늘 중 방문 일정 확정`);
+  if (me.success < GOAL.success) actions.push(`성공률 ${me.success}% → 목표 ${GOAL.success}%: 방문율·접촉속도 개선 시 자연히 상승`);
+  if (actions.length === 0)   actions.push('✅ 모든 지표 목표 달성 중입니다! 현재 수준을 유지하세요.');
+
+  const guide = document.querySelector('.action-guide');
+  guide.querySelector('.action-items').innerHTML = actions.map(a=>`<div class="action-item">${a}</div>`).join('');
+
+  document.querySelectorAll('.kpi-card-sub')[0].textContent = `문의→전화 · 목표 ${GOAL.c1}일 이내`;
+  document.querySelectorAll('.kpi-card-sub')[1].textContent = `전화→방문 · 목표 ${GOAL.c2}일 이내`;
+  document.querySelectorAll('.kpi-card-sub')[2].textContent = `전국 평균 · 목표 ${GOAL.visit}%`;
+  document.querySelectorAll('.kpi-card-sub')[3].textContent = `계약 전환 · 목표 ${GOAL.success}%`;
+}
+</script>
+</body>
+</html>
