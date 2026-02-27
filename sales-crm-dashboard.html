@@ -209,6 +209,10 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.95);backdrop-
 
 /* 아이템 태그 */
 .item-micro{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:700;margin-right:2px;}
+/* 경과중 강조 */
+.elapsed-ongoing{color:var(--danger);font-weight:700;}
+.elapsed-warn{color:var(--warning);font-weight:700;}
+.elapsed-good{color:var(--success);font-weight:700;}
 .item-micro.yuparm{background:rgba(59,130,246,.2);color:var(--accent);}
 .item-micro.addon{background:rgba(100,116,139,.12);color:var(--text3);}
 
@@ -618,14 +622,16 @@ function daysBetween(d1Str,d2Str){
   return Math.max(0,Math.round((d2-d1)/msPerDay));
 }
 // 두 일시 간 표시용 문자열 (0일(N시간), N일)
-function elapsedLabel(fromDt,toDt){
-  const ms=new Date(toDt)-new Date(fromDt);
-  if(ms<0)return '미접촉';
-  const totalHours=Math.floor(ms/(1000*60*60));
-  const days=Math.floor(totalHours/24);
-  const hours=totalHours%24;
-  if(days===0)return `0일 (${hours}시간)`;
-  return `${days}일`;
+function elapsedLabel(fromDt, toDt, ongoing){
+  // ongoing=true: 아직 접촉 이력 없음 → 지금까지 경과 시간 표시
+  const to = toDt ? new Date(toDt) : new Date();
+  const ms = to - new Date(fromDt);
+  if(ms < 0) return '-';
+  const totalHours = Math.floor(ms / (1000*60*60));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  const val = days===0 ? `0일 (${hours}시간)` : `${days}일`;
+  return ongoing ? `${val} 경과중 ⏱` : val;
 }
 // 일시 표시
 function fmtDateTime(dt){
@@ -751,12 +757,14 @@ function genCustomers(dealerName,count,c1Range,c2Range,visitRate,successRate){
     const contactCount=threads.filter(t=>!t.autoEntry).length;
     // 1차 접촉기간 계산
     const c1Thread=threads.find(t=>t.contactNo===1);
-    const c1Elapsed=c1Thread?elapsedLabel(inquiryDatetime,c1Thread.datetime):'미접촉';
+    // 1차 이력 없으면 문의 접수 시점부터 지금까지 경과시간 (경과중)
+    const c1Elapsed=c1Thread?elapsedLabel(inquiryDatetime,c1Thread.datetime):elapsedLabel(inquiryDatetime,null,true);
     const c1Days=c1Thread?daysBetween(inquiryDate,c1Thread.datetime.slice(0,10)):c1Val;
     // 2차 접촉기간 계산 (1차→2차)
     const c2Thread=threads.find(t=>t.contactNo===2);
     const c1ThreadDt=c1Thread?c1Thread.datetime:inquiryDatetime;
-    const c2Elapsed=c2Thread?elapsedLabel(c1ThreadDt,c2Thread.datetime):'미접촉';
+    // 2차 이력 없고 1차 이력 있으면 1차 시점부터 지금까지 경과시간 (경과중) / 1차 이력도 없으면 '-'
+    const c2Elapsed=c2Thread?elapsedLabel(c1ThreadDt,c2Thread.datetime):c1Thread?elapsedLabel(c1Thread.datetime,null,true):'-';
     const c2Days=c2Thread?daysBetween(c1Thread?c1Thread.datetime.slice(0,10):inquiryDate,c2Thread.datetime.slice(0,10)):c2Val;
     return {
       id:i+1,
@@ -948,6 +956,23 @@ function filterVisit(type,btn){
   btns.forEach(b=>b.classList.remove('active'));btn.classList.add('active');visitFilter=type;
   renderCustomerTable(getCurrentFiltered());
 }
+// 접촉기간 표시값에 색상 클래스 래핑
+function wrapElapsed(val, goalDays){
+  if(!val || val==='-') return '<span style="color:var(--text3)">-</span>';
+  if(val.includes('경과중')){
+    // 경과 중인 경우: 목표 초과면 빨강, 근접하면 주황, 이내면 초록
+    const daysMatch = val.match(/(\d+)일/);
+    const hrs = val.match(/\((\d+)시간\)/);
+    const days = daysMatch ? parseInt(daysMatch[1]) : 0;
+    const cls = days >= goalDays ? 'elapsed-ongoing' : days >= goalDays*0.7 ? 'elapsed-warn' : 'elapsed-good';
+    return `<span class="${cls}">${val}</span>`;
+  }
+  // 이력 있는 경우
+  const daysMatch = val.match(/(\d+)일/);
+  const days = daysMatch ? parseInt(daysMatch[1]) : 0;
+  const cls = days <= goalDays ? 'elapsed-good' : days <= goalDays*1.5 ? 'elapsed-warn' : 'elapsed-ongoing';
+  return `<span class="${cls}">${val}</span>`;
+}
 function renderCustomerTable(customers){
   const contactLabel=['미진행','1차 접촉','2차 접촉','3차 접촉','4차 접촉','5차 접촉'];
   const contactCls=['contact-0','contact-1','contact-2','contact-3','contact-4','contact-5'];
@@ -962,8 +987,8 @@ function renderCustomerTable(customers){
       <td><strong>${c.name}</strong></td>
       <td>${c.pharmacy}</td>
       <td style="color:var(--text3);font-size:12px">${c.inquiryDatetime.slice(0,16).replace('T',' ')}</td>
-      <td style="font-weight:700">${c.c1Elapsed}</td>
-      <td style="font-weight:700">${c.c2Elapsed}</td>
+      <td>${wrapElapsed(c.c1Elapsed, GOAL.c1)}</td>
+      <td>${wrapElapsed(c.c2Elapsed, GOAL.c2)}</td>
       <td>${itags}</td>
       <td><span class="contact-badge ${contactCls[stage]}">${contactLabel[stage]}</span></td>
       <td>${visitBadge}</td>
@@ -1012,8 +1037,8 @@ function renderScreen3(c){
   updateStatus3Badge(c.salesStatus);
   // 아이템
   document.getElementById('d3-items').innerHTML=c.items.map(it=>`<span class="item-tag ${it==='유팜'?'yuparm':'addon'}">${it==='유팜'?'⭐ 유팜':it}</span>`).join('');
-  document.getElementById('d3-c1').textContent=c.c1Elapsed;
-  document.getElementById('d3-c2').textContent=c.c2Elapsed;
+  document.getElementById('d3-c1').innerHTML=wrapElapsed(c.c1Elapsed, GOAL.c1);
+  document.getElementById('d3-c2').innerHTML=wrapElapsed(c.c2Elapsed, GOAL.c2);
   document.getElementById('d3-visited').textContent=c.visited?'방문완료':'미방문';
   document.getElementById('d3-contract').textContent=c.yuparmSuccess?'계약완료':'미계약';
   // 스레드
@@ -1080,8 +1105,8 @@ function addHistory(){
   // 접촉기간 재계산
   const c1t=c.threads.find(t=>t.contactNo===1);
   const c2t=c.threads.find(t=>t.contactNo===2);
-  c.c1Elapsed=c1t?elapsedLabel(c.inquiryDatetime,c1t.datetime):'미접촉';
-  c.c2Elapsed=c2t&&c1t?elapsedLabel(c1t.datetime,c2t.datetime):'미접촉';
+  c.c1Elapsed=c1t?elapsedLabel(c.inquiryDatetime,c1t.datetime):elapsedLabel(c.inquiryDatetime,null,true);
+  c.c2Elapsed=c2t&&c1t?elapsedLabel(c1t.datetime,c2t.datetime):c1t?elapsedLabel(c1t.datetime,null,true):'-';
   c.c1Val=c1t?daysBetween(c.inquiryDate,c1t.datetime.slice(0,10)):c.c1Val;
   c.c2Val=c2t&&c1t?daysBetween(c1t.datetime.slice(0,10),c2t.datetime.slice(0,10)):c.c2Val;
   // 초기화 후 재렌더
