@@ -375,7 +375,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,14,26,.95);backdrop-
       </div>
     </div>
     <div class="action-guide">
-      <div class="action-guide-title">🚨 지금 바로 해야 할 일</div>
+      <div class="action-guide-title">🚨 지금 바로 해야 할 일 — 성공률은 이 3가지 패턴이 만듭니다</div>
       <div class="action-items" id="actionItems"></div>
     </div>
   </div>
@@ -620,7 +620,7 @@ function daysBetween(d1Str,d2Str){
 // 두 일시 간 표시용 문자열 (0일(N시간), N일)
 function elapsedLabel(fromDt,toDt){
   const ms=new Date(toDt)-new Date(fromDt);
-  if(ms<0)return '-';
+  if(ms<0)return '미접촉';
   const totalHours=Math.floor(ms/(1000*60*60));
   const days=Math.floor(totalHours/24);
   const hours=totalHours%24;
@@ -751,12 +751,12 @@ function genCustomers(dealerName,count,c1Range,c2Range,visitRate,successRate){
     const contactCount=threads.filter(t=>!t.autoEntry).length;
     // 1차 접촉기간 계산
     const c1Thread=threads.find(t=>t.contactNo===1);
-    const c1Elapsed=c1Thread?elapsedLabel(inquiryDatetime,c1Thread.datetime):'-';
+    const c1Elapsed=c1Thread?elapsedLabel(inquiryDatetime,c1Thread.datetime):'미접촉';
     const c1Days=c1Thread?daysBetween(inquiryDate,c1Thread.datetime.slice(0,10)):c1Val;
     // 2차 접촉기간 계산 (1차→2차)
     const c2Thread=threads.find(t=>t.contactNo===2);
     const c1ThreadDt=c1Thread?c1Thread.datetime:inquiryDatetime;
-    const c2Elapsed=c2Thread?elapsedLabel(c1ThreadDt,c2Thread.datetime):'-';
+    const c2Elapsed=c2Thread?elapsedLabel(c1ThreadDt,c2Thread.datetime):'미접촉';
     const c2Days=c2Thread?daysBetween(c1Thread?c1Thread.datetime.slice(0,10):inquiryDate,c2Thread.datetime.slice(0,10)):c2Val;
     return {
       id:i+1,
@@ -868,18 +868,30 @@ function renderCompare(){
   document.getElementById('mineSideLabel').textContent='🏢 '+me.name+' (내 대리점)';
   document.getElementById('bestSideLabel').textContent='🏆 '+best.name+' (Best)';
   const row=(d,cls)=>`
-    <div class="kpi-compare-item ${cls}"><div><div class="kci-name">1차 접촉기간</div><div class="kci-sub">문의→1차이력 · 목표 ${GOAL.c1}일</div></div><div style="text-align:right"><div class="kci-value ${kC1(d.c1)}">${d.c1||'-'}일</div></div></div>
-    <div class="kpi-compare-item ${cls}"><div><div class="kci-name">2차 접촉기간</div><div class="kci-sub">1차→2차이력 · 목표 ${GOAL.c2}일</div></div><div style="text-align:right"><div class="kci-value ${kC2(d.c2)}">${d.c2||'-'}일</div></div></div>
+    <div class="kpi-compare-item ${cls}"><div><div class="kci-name">1차 접촉기간</div><div class="kci-sub">문의→1차이력 · 목표 ${GOAL.c1}일</div></div><div style="text-align:right"><div class="kci-value ${kC1(d.c1)}">${d.c1>0?d.c1+'일':'미접촉'}</div></div></div>
+    <div class="kpi-compare-item ${cls}"><div><div class="kci-name">2차 접촉기간</div><div class="kci-sub">1차→2차이력 · 목표 ${GOAL.c2}일</div></div><div style="text-align:right"><div class="kci-value ${kC2(d.c2)}">${d.c2>0?d.c2+'일':'미접촉'}</div></div></div>
     <div class="kpi-compare-item ${cls}"><div><div class="kci-name">방문율</div><div class="kci-sub">방문완료 비율 · 목표 ${GOAL.visit}%</div></div><div style="text-align:right"><div class="kci-value ${kV(d.visit)}">${d.visit}%</div></div></div>
     <div class="kpi-compare-item ${cls}"><div><div class="kci-name">성공률 (유팜)</div><div class="kci-sub">유팜 계약 전환 · 목표 ${GOAL.success}%</div></div><div style="text-align:right"><div class="kci-value ${kS(d.success)}">${d.success}%</div></div></div>`;
   document.getElementById('mineKpiList').innerHTML=row(me,'highlight-mine');
   document.getElementById('bestKpiList').innerHTML=row(best,'highlight-best');
   const actions=[];
-  if(me.c1>GOAL.c1)actions.push(`1차 접촉 ${me.c1}일 → 목표 ${GOAL.c1}일: 문의 당일 이력 등록 필수`);
-  if(me.c2>GOAL.c2)actions.push(`2차 접촉 ${me.c2}일 → 목표 ${GOAL.c2}일: 1차 이후 빠른 2차 접촉 실행`);
-  if(me.visit<GOAL.visit)actions.push(`방문율 ${me.visit}% → 목표 ${GOAL.visit}%: 미방문 고객 방문 일정 확정`);
-  if(me.success<GOAL.success)actions.push(`성공률(유팜) ${me.success}% → 목표 ${GOAL.success}%: 접촉속도 개선이 핵심`);
-  if(!actions.length)actions.push('✅ 모든 목표 달성 중! 현재 수준을 유지하세요.');
+  // 우선순위 1: 1차 접촉기간
+  if(me.c1>GOAL.c1){
+    actions.push(`[우선순위 1] 1차 접촉 ${me.c1}일 → 목표 ${GOAL.c1}일 이내: 신규 문의 접수 즉시 당일 전화가 성공률의 출발점입니다. 오늘 접수된 문의부터 바로 전화하세요.`);
+  }
+  // 우선순위 2: 2차 접촉기간 (1차 미달성이면 이것부터 해결 유도, 달성했거나 동시 미달이면 표시)
+  if(me.c2>GOAL.c2){
+    const prefix=me.c1<=GOAL.c1?'[우선순위 2] ':'[우선순위 2] ';
+    actions.push(`${prefix}2차 접촉 ${me.c2}일 → 목표 ${GOAL.c2}일 이내: 전화 후 3일 안에 방문을 잡아야 계약 전환율이 높아집니다. 1차 접촉 완료 고객 중 방문 미확정 건을 오늘 바로 일정 조율하세요.`);
+  }
+  // 우선순위 3: 방문율
+  if(me.visit<GOAL.visit){
+    actions.push(`[우선순위 3] 방문율 ${me.visit}% → 목표 ${GOAL.visit}%: 방문까지 이어진 고객의 계약 전환율이 월등히 높습니다. 미방문 고객 ${Math.round((GOAL.visit-me.visit)/100*(me.visit>0?Math.round(allCustomers.length||20):20))||'다수'}명의 방문 일정을 이번 주 안에 확정하세요.`);
+  }
+  // 모두 달성
+  if(!actions.length){
+    actions.push('✅ 3가지 핵심 패턴 모두 목표 달성 중! 이 속도를 유지하면 성공률은 자연히 따라옵니다.');
+  }
   document.getElementById('actionItems').innerHTML=actions.map(a=>`<div class="action-item">${a}</div>`).join('');
 }
 function renderDealerTable(){
@@ -1068,8 +1080,8 @@ function addHistory(){
   // 접촉기간 재계산
   const c1t=c.threads.find(t=>t.contactNo===1);
   const c2t=c.threads.find(t=>t.contactNo===2);
-  c.c1Elapsed=c1t?elapsedLabel(c.inquiryDatetime,c1t.datetime):'-';
-  c.c2Elapsed=c2t&&c1t?elapsedLabel(c1t.datetime,c2t.datetime):'-';
+  c.c1Elapsed=c1t?elapsedLabel(c.inquiryDatetime,c1t.datetime):'미접촉';
+  c.c2Elapsed=c2t&&c1t?elapsedLabel(c1t.datetime,c2t.datetime):'미접촉';
   c.c1Val=c1t?daysBetween(c.inquiryDate,c1t.datetime.slice(0,10)):c.c1Val;
   c.c2Val=c2t&&c1t?daysBetween(c1t.datetime.slice(0,10),c2t.datetime.slice(0,10)):c.c2Val;
   // 초기화 후 재렌더
